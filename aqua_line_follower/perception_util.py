@@ -158,7 +158,7 @@ def InferenceOnFrame(session, input_name, frame, frame_idx=0, reverse_swim=False
         # Inference
         start_time = time.time()
         outputs = session.run(None, {input_name: input_image})
-        print(f"[INFO] Inference time {time.time() - start_time:.4f} seconds")
+        # print(f"[INFO] Inference time {time.time() - start_time:.4f} seconds")
         # Postprocess
         seg_map = postprocess(outputs[0], frame.shape)
 

@@ -44,15 +44,15 @@ def generate_launch_description():
         ),
 
         # Launch swimmer control node
-        Node(
-            package='aqua_line_follower',
-            executable='swimmer',
-            name='swimmer',
-            output='screen',
-            parameters=[{
-                'reverse_swim': LaunchConfiguration('reverse_swim')
-            }]
-        ),
+        # Node(
+        #     package='aqua_line_follower',
+        #     executable='swimmer',
+        #     name='swimmer',
+        #     output='screen',
+        #     parameters=[{
+        #         'reverse_swim': LaunchConfiguration('reverse_swim')
+        #     }]
+        # ),
 
         # Launch optical flow-based velocity estimator node
         Node(
