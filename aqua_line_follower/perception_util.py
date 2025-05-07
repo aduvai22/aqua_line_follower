@@ -111,7 +111,7 @@ def find_line_points(segmentation_map):
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Sort the contours from right to left (robot's direction)
-    sorted_contours, _ = sort_contours(contours, method='right-to-left')
+    sorted_contours, _ = sort_contours(contours, method='bottom-to-top')
 
     # Fit a line to the contours (using polyfit to fit a line that goes through the contour)
     for contour in sorted_contours:
@@ -147,6 +147,7 @@ def InferenceOnFrame(session, input_name, frame, frame_idx=0):
     """
     global _w, _h
     try:
+        frame = cv2.flip(frame, 1)  # Flip horizontally
         original_frame = frame.copy()
 
         # Preprocess

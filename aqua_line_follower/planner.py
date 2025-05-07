@@ -18,7 +18,6 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import Point
 from ament_index_python.packages import get_package_share_directory
 
-
 class Planner(Node):
     """
     This ROS2 node processes detected lines from the down camera, plans the next waypoint and update robot's state information.
@@ -44,16 +43,16 @@ class Planner(Node):
         self.map_image = None
 
         # Subscribe to map and detected lines
-        self.lines_sub = self.create_subscription(Float32MultiArray, '/line_follower/detected_lines', self.lines_callback, 10)
-        self.map_sub = self.create_subscription(Image, '/line_follower/seg_map', self.map_callback, 10)
+        self.lines_sub = self.create_subscription(Float32MultiArray, '/a15/line_follower/detected_lines', self.lines_callback, 10)
+        self.map_sub = self.create_subscription(Image, '/a15/line_follower/seg_map', self.map_callback, 10)
 
 
         # Create publishers for data topics
-        self.state_pub = self.create_publisher(String, '/line_follower/state', 10)
-        self.waypoints_pub = self.create_publisher(Point, '/line_follower/waypoints', 10)
-        self.closest_point_pub = self.create_publisher(Point, '/line_follower/closest_point', 10)
-        self.angle_pub = self.create_publisher(Float32, '/line_follower/angle', 10)
-        self.processed_image_pub = self.create_publisher(Image, '/line_follower/waypoint_image', 10)
+        self.state_pub = self.create_publisher(String, '/a15/line_follower/state', 10)
+        self.waypoints_pub = self.create_publisher(Point, '/a15/line_follower/waypoints', 10)
+        self.closest_point_pub = self.create_publisher(Point, '/a15/line_follower/closest_point', 10)
+        self.angle_pub = self.create_publisher(Float32, '/a15/line_follower/angle', 10)
+        self.processed_image_pub = self.create_publisher(Image, '/a15/line_follower/waypoint_image', 10)
 
         # CVBridge for converting ROS Image to OpenCV format
         self.bridge = CvBridge()
@@ -192,7 +191,6 @@ def main(args=None):
     """
     Main function to run the Planner node.
     """
-    # Initialize the ROS2 node
     rclpy.init(args=args)
     planner = Planner()
 

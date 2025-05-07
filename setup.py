@@ -27,6 +27,7 @@ setup(
         'console_scripts': [
             'detector = aqua_line_follower.detector:main',
             'planner = aqua_line_follower.planner:main',
+            'swimmer = aqua_line_follower.swimmer_wrapper:main',
         ],
     },
 )

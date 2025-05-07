@@ -49,8 +49,8 @@ class Detector(Node):
         )
 
         # Publishers
-        self.map_pub = self.create_publisher(Image, '/line_follower/seg_map', 10)
-        self.lines_pub = self.create_publisher(Float32MultiArray, '/line_follower/detected_lines', 10)
+        self.map_pub = self.create_publisher(Image, '/a15/line_follower/seg_map', 10)
+        self.lines_pub = self.create_publisher(Float32MultiArray, '/a15/line_follower/detected_lines', 10)
 
         self.get_logger().info("Waiting for input image")
 
