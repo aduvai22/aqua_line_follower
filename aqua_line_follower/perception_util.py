@@ -11,7 +11,6 @@ This script contains helper functions for processing images and performing infer
 import cv2
 import time
 import numpy as np
-import tensorrt as trt
 
 
 

@@ -8,7 +8,6 @@ import os
 import time
 from datetime import datetime
 import rclpy
-import onnxruntime as ort
 import yaml
 import socket
 from rclpy.node import Node
@@ -18,6 +17,9 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import Float32MultiArray
 from ament_index_python.packages import get_package_share_directory
 from .perception_util import InferenceOnFrame
+print("here")
+import onnxruntime as ort
+
 
 class Detector(Node):
     """
@@ -102,7 +104,7 @@ class Detector(Node):
                 map_msg = self.bridge.cv2_to_imgmsg(line_overlayed_map, encoding='bgr8')
                 self.map_pub.publish(map_msg)
 
-                if lines is not None:
+                if lines is not None and len(lines) > 0:
                     # Publish detected line coordinates
                     flat_lines = [float(coord) for line in lines for coord in line]  # flatten the list of lines
                     lines_msg = Float32MultiArray()
