@@ -4,20 +4,14 @@
 # =======================================================
 
 import os
-# import cv2
-import time
-from datetime import datetime
 import rclpy
 import yaml
-import socket
 from rclpy.node import Node
-from std_msgs.msg import Int32
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from std_msgs.msg import Float32MultiArray
 from ament_index_python.packages import get_package_share_directory
 from .perception_util import InferenceOnFrame
-print("here")
 import onnxruntime as ort
 
 
@@ -34,29 +28,15 @@ class Detector(Node):
         # Package directory
         package_share = get_package_share_directory('aqua_line_follower')
 
-        # Read config params
-        config_file = os.path.join(package_share, 'config', 'config.yaml')
-        with open(config_file, 'r') as f:
-            config = yaml.safe_load(f)
-
-        self.PUBLISH_RATE = config['PUBLISH_RATE']  # 5 Hz
-        self.SLEEP_TIME = 1.0 / self.PUBLISH_RATE
-
-        # Create publishers
-        self.map_pub = self.create_publisher(Image, '/map', 10)
-        self.lines_pub = self.create_publisher(Float32MultiArray, '/detected_lines', 10)
-
         # CVBridge for converting OpenCV images to ROS Image messages
         self.bridge = CvBridge()
 
-
-        # Read engine file and prepare bindings
-        model_name = 'mobilenet.onnx'
-        self.model_path = os.path.join(package_share, 'weights', model_name)
+        # Read onnx file and prepare session
+        self.model_name = 'mobilenet.onnx'
+        self.model_path = os.path.join(package_share, 'weights', self.model_name)
         self.get_logger().info("Loading ONNX model from: " + self.model_path)
         
-
-        # Load ONNX model
+        # Load ONNX model to a session
         self.session = ort.InferenceSession(self.model_path, providers=['CPUExecutionProvider'])
         self.input_name = self.session.get_inputs()[0].name
 
@@ -69,20 +49,16 @@ class Detector(Node):
         )
 
         # Publishers
-        self.map_pub = self.create_publisher(Image, '/map', 10)
+        self.map_pub = self.create_publisher(Image, '/seg_map', 10)
         self.lines_pub = self.create_publisher(Float32MultiArray, '/detected_lines', 10)
 
-        self.get_logger().info("Waiting for image")
-
-        # Set processing rate (10 Hz) using a timer
-        # self.timer = self.create_timer(1.0 / 10.0, self.timer_callback)
+        self.get_logger().info("Waiting for input image")
 
     def image_callback(self, msg):
         """
-        Callback  function to keep the node alive.
+        Callback function to keep the node alive.
         """
         try:
-            
             # --- Process downward camera for line detection ---
 
             frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -90,21 +66,19 @@ class Detector(Node):
             # Check if the frame was read successfully
             if frame is None:
                 self.get_logger().warn("Failed to read frame from downward camera.")
-            else:
-                frame_height, frame_width = frame.shape[:2]
-                screen_center_x = frame_width // 2
-                screen_center_y = frame_height // 2
 
+            else:
                 # Detect cavelines on the downward camera frame
-                self.get_logger().info("Inferencing on downward frame...")
+                # self.get_logger().info("Inferencing on downward frame...")
                 lines, line_overlayed_map = InferenceOnFrame(
                     self.session, self.input_name, frame)
                 
                 # Publish the processed frame
-                map_msg = self.bridge.cv2_to_imgmsg(line_overlayed_map, encoding='bgr8')
-                self.map_pub.publish(map_msg)
+                seg_map_msg = self.bridge.cv2_to_imgmsg(line_overlayed_map, encoding='bgr8')
+                self.map_pub.publish(seg_map_msg)
 
                 if lines is not None and len(lines) > 0:
+                    self.get_logger().info("Lines detected")
                     # Publish detected line coordinates
                     flat_lines = [float(coord) for line in lines for coord in line]  # flatten the list of lines
                     lines_msg = Float32MultiArray()

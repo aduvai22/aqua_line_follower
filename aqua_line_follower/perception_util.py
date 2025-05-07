@@ -1,21 +1,16 @@
-# ! /usr/bin/python3
 # =======================================================
-# Author : Alakrit Gupta, Adnan Abdullah
-# Email: gupta.alankrit@ufl.edu, adnanabdullah@ufl.edu
+# Author: Adnan Abdullah
+# Email: adnanabdullah@ufl.edu
 # =======================================================
 
 """
-This script contains helper functions for processing images and performing inference using TensorRT.
+This script contains helper functions for processing images and performing inference using ONNX.
 """
 
 import cv2
 import time
 import numpy as np
 
-
-
-batch = 1
-save_mode = False
 
 # Default image size
 _w, _h = 256, 256
@@ -36,7 +31,7 @@ def preprocess(frame):
     global _w, _h
     frame = cv2.resize(frame, (_w, _h))
     input_image = (2.0 / 255.0) * frame.transpose((2, 0, 1)) - 1.0
-    return input_image # return input_image[np.newaxis, :].astype(np.float32)
+    return input_image[np.newaxis, :].astype(np.float32)
 
 def postprocess(output, original_frame_shape):
     """
@@ -141,7 +136,7 @@ def find_line_points(segmentation_map):
 
 def InferenceOnFrame(session, input_name, frame, frame_idx=0):
     """
-    Perform inference on a single frame using the TensorRT engine.
+    Perform inference on a single frame using the ONNX runtime.
     Args:
         session: onnx session
         frame (numpy.ndarray): Input image frame.
@@ -151,7 +146,6 @@ def InferenceOnFrame(session, input_name, frame, frame_idx=0):
         numpy.ndarray: overlayed image with lines drawn.
     """
     global _w, _h
-
     try:
         original_frame = frame.copy()
 
@@ -161,12 +155,9 @@ def InferenceOnFrame(session, input_name, frame, frame_idx=0):
         start_time = time.time()
         outputs = session.run(None, {input_name: input_image})
         print(f"[INFO] Inference time {time.time() - start_time:.4f} seconds")
-
         # Postprocess
         seg_map = postprocess(outputs[0], frame.shape)
-        overlay = overlay_segmentation(frame, seg_map)
 
-       
         # Find contours and their coordinate points
         line_ponts, line_map = find_line_points(seg_map)
 
