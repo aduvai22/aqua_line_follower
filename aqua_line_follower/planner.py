@@ -29,7 +29,7 @@ class Planner(Node):
         super().__init__('planner')
 
         # Package directory
-        package_share = get_package_share_directory('auv_nano')
+        package_share = get_package_share_directory('aqua_line_follower')
 
         # Read config params
         config_file = os.path.join(package_share, 'config', 'config.yaml')
@@ -44,16 +44,16 @@ class Planner(Node):
         self.map_image = None
 
         # Subscribe to map and detected lines
-        self.lines_sub = self.create_subscription(Float32MultiArray, '/detected_lines', self.lines_callback, 10)
-        self.map_sub = self.create_subscription(Image, '/map', self.map_callback, 10)
+        self.lines_sub = self.create_subscription(Float32MultiArray, '/line_follower/detected_lines', self.lines_callback, 10)
+        self.map_sub = self.create_subscription(Image, '/line_follower/seg_map', self.map_callback, 10)
 
 
         # Create publishers for data topics
-        self.state_pub = self.create_publisher(String, '/state', 10)
-        self.waypoints_pub = self.create_publisher(Point, '/waypoints', 10)
-        self.closest_point_pub = self.create_publisher(Point, '/closest_point', 10)
-        self.angle_pub = self.create_publisher(Float32, '/angle', 10)
-        self.processed_image_pub = self.create_publisher(Image, '/processed_image', 10)
+        self.state_pub = self.create_publisher(String, '/line_follower/state', 10)
+        self.waypoints_pub = self.create_publisher(Point, '/line_follower/waypoints', 10)
+        self.closest_point_pub = self.create_publisher(Point, '/line_follower/closest_point', 10)
+        self.angle_pub = self.create_publisher(Float32, '/line_follower/angle', 10)
+        self.processed_image_pub = self.create_publisher(Image, '/line_follower/waypoint_image', 10)
 
         # CVBridge for converting ROS Image to OpenCV format
         self.bridge = CvBridge()
@@ -63,19 +63,10 @@ class Planner(Node):
         self.prev_closest_point = np.array([0.0, 0.0])
         self.DIRECTION_HISTORY_SIZE = 3
 
+        # # Set processing rate (10 Hz) using a timer
+        # self.timer = self.create_timer(1.0 / 10.0, self.timer_callback)
 
-        # Set processing rate (10 Hz) using a timer
-        self.timer = self.create_timer(1.0 / 10.0, self.timer_callback)
 
-    def lines_callback(self, msg):
-        """
-        Store the coordinates (pixel locations) of detected lines.
-        """
-        try:
-            self.detected_lines = np.array(msg.data).reshape(-1, 4)
-        except Exception as e:
-            self.detected_lines = None
-    
     def map_callback(self, msg):
         """
         Store the segmentation map and 
@@ -88,17 +79,20 @@ class Planner(Node):
             self.map_image = None
 
 
-    def timer_callback(self):
-        """
-        Callback  function to keep the node alive.
-        """
+    def lines_callback(self, msg):
 
+        """
+        Store the coordinates (pixel locations) of detected lines.
+        Process the lines to set next waypoint and heading angle
+        """
         # Check if segmentation map is published
         if self.map_image is None:
             self.get_logger().info("Waiting for map image...")
             return
         
         try:
+            self.detected_lines = np.array(msg.data).reshape(-1, 4)
+
             # --- Process the detected lines to calculate next waypoint ---
             lines = self.detected_lines
             line_overlayed_map = self.map_image.copy()
@@ -189,7 +183,7 @@ class Planner(Node):
             self.angle_pub.publish(angle_msg)
 
             # Sleep to maintain ~5Hz
-            time.sleep(self.SLEEP_TIME)
+            # time.sleep(self.SLEEP_TIME)
 
         except Exception as e:
             self.get_logger().error("Exception in timer callback: {}".format(e))
