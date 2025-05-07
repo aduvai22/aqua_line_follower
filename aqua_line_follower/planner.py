@@ -17,7 +17,6 @@ from std_msgs.msg import Int32, String, Float32
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Point
 from ament_index_python.packages import get_package_share_directory
-from .comm_util import send_udp_data
 
 
 class Planner(Node):
@@ -37,8 +36,6 @@ class Planner(Node):
         with open(config_file, 'r') as f:
             config = yaml.safe_load(f)
 
-        self.UDP_IP = config['UDP_IP']
-        self.UDP_PORT = config['UDP_PORT']
         self.PUBLISH_RATE = config['PUBLISH_RATE']  # 5 Hz
         self.SLEEP_TIME = 1.0 / self.PUBLISH_RATE
 
@@ -49,7 +46,6 @@ class Planner(Node):
         # Subscribe to map and detected lines
         self.lines_sub = self.create_subscription(Float32MultiArray, '/detected_lines', self.lines_callback, 10)
         self.map_sub = self.create_subscription(Image, '/map', self.map_callback, 10)
-        self.qr_sub = self.create_subscription(Int32, '/qr_info', self.qr_callback, 10)
 
 
         # Create publishers for data topics
@@ -66,9 +62,6 @@ class Planner(Node):
         self.prev_point = np.array([0.0, 0.0])
         self.prev_closest_point = np.array([0.0, 0.0])
         self.DIRECTION_HISTORY_SIZE = 3
-
-        # Create UDP socket (alternate comm channel for ROS2)
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 
         # Set processing rate (10 Hz) using a timer
@@ -94,14 +87,6 @@ class Planner(Node):
             self.get_logger().error(f"Failed to convert map image: {e}")
             self.map_image = None
 
-    def qr_callback(self, msg):
-        """
-        Store the QR info.
-        """
-        try:
-            self.qr_value = msg.data
-        except Exception as e:
-            self.qr_value = -1
 
     def timer_callback(self):
         """
@@ -180,9 +165,6 @@ class Planner(Node):
                 cv2.arrowedLine(line_overlayed_map, (screen_center_x, screen_center_y),
                                 (img_next_x, img_next_y), (255, 0, 0), 2, tipLength=0.1)
 
-            ## Optional: show the processed image with planned waypoints
-            # cv2.imshow("Planner Processed View", line_overlayed_map)
-            # cv2.waitKey(1)
             
             # Publish the line overlayed map
             ros_line_overlayed_map= self.bridge.cv2_to_imgmsg(line_overlayed_map, encoding="bgr8")
@@ -201,27 +183,16 @@ class Planner(Node):
             self.waypoints_pub.publish(waypoint_msg)
 
             # Publish heading
+            #Change here: Publish the angle with swimmer API
             angle_msg = Float32()
             angle_msg.data = float(next_heading_deg)
             self.angle_pub.publish(angle_msg)
-
-            # Send control commands to RPi over UDP in case ROS2 connection is lost
-            print("[INFO] Sending control commands")
-            send_udp_data(self.sock, "state", {"direction": direction}, self.UDP_IP, self.UDP_PORT)
-            send_udp_data(self.sock, "waypoints", {"x": float(next_point[0]), "y": float(next_point[1])}, self.UDP_IP, self.UDP_PORT)
-            send_udp_data(self.sock, "angle", {"angle": float(next_heading_deg)}, self.UDP_IP, self.UDP_PORT)
-            send_udp_data(self.sock, "qr_info", {"qr_data": self.qr_value}, self.UDP_IP, self.UDP_PORT)
 
             # Sleep to maintain ~5Hz
             time.sleep(self.SLEEP_TIME)
 
         except Exception as e:
             self.get_logger().error("Exception in timer callback: {}".format(e))
-
-    def destroy_node(self):
-        # Clean up:destroy OpenCV windows
-        cv2.destroyAllWindows()
-        super().destroy_node()
 
 def main(args=None):
     """
@@ -230,6 +201,7 @@ def main(args=None):
     # Initialize the ROS2 node
     rclpy.init(args=args)
     planner = Planner()
+
     try:
         # Spin the node to keep it alive and processing
         rclpy.spin(planner)
