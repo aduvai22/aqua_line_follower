@@ -112,7 +112,7 @@ class Detector(Node):
                     self.lines_pub.publish(lines_msg)             
 
         except Exception as e:
-            self.get_logger().error("Exception in timer callback: {}".format(e))
+            self.get_logger().error("Exception in callback: {}".format(e))
 
 
 def main(args=None):
