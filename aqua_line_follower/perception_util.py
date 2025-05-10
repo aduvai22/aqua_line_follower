@@ -93,7 +93,7 @@ def sort_contours(cnts, method="right-to-left"):
     return (cnts, boundingBoxes)
 
 
-def find_line_points(segmentation_map):
+def find_line_points(segmentation_map, reverse_swim=False):
     """
     Find line points in the segmentation map using Canny edge detection and contour fitting.
     Args:
@@ -111,7 +111,10 @@ def find_line_points(segmentation_map):
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Sort the contours from right to left (robot's direction)
-    sorted_contours, _ = sort_contours(contours, method='bottom-to-top')
+    if reverse_swim:
+        sorted_contours, _ = sort_contours(contours, method='top-to-bottom')
+    else:
+        sorted_contours, _ = sort_contours(contours, method='bottom-to-top')
 
     # Fit a line to the contours (using polyfit to fit a line that goes through the contour)
     for contour in sorted_contours:
@@ -134,7 +137,7 @@ def find_line_points(segmentation_map):
     return line_points, segmentation_map
 
 
-def InferenceOnFrame(session, input_name, frame, frame_idx=0):
+def InferenceOnFrame(session, input_name, frame, frame_idx=0, reverse_swim=False):
     """
     Perform inference on a single frame using the ONNX runtime.
     Args:
@@ -160,7 +163,7 @@ def InferenceOnFrame(session, input_name, frame, frame_idx=0):
         seg_map = postprocess(outputs[0], frame.shape)
 
         # Find contours and their coordinate points
-        line_ponts, line_map = find_line_points(seg_map)
+        line_ponts, line_map = find_line_points(seg_map, reverse_swim=reverse_swim)
 
         # Overlay the segmentation map on the original frame
         line_overlayed_map = overlay_segmentation(original_frame, line_map)

@@ -38,6 +38,9 @@ class Planner(Node):
         self.PUBLISH_RATE = config['PUBLISH_RATE']  # 5 Hz
         self.SLEEP_TIME = 1.0 / self.PUBLISH_RATE
 
+        self.declare_parameter('reverse_swim', False)
+        self.reverse_swim = self.get_parameter('reverse_swim').get_parameter_value().bool_value
+
         # Subscribed message containers
         self.detected_lines = None
         self.map_image = None
@@ -113,13 +116,24 @@ class Planner(Node):
                 # If only one line is detected, use its coordinates for waypoint
                 if countours == 1:
                     x1, y1, x2, y2 = lines[0]
-                    next_heading_deg = np.rad2deg(np.arctan2(y2 - y1, x2 - x1))
+                    # Changed here
+                    # next_heading_deg = np.rad2deg(np.arctan2(y2 - y1, x2 - x1))
                     next_point[0] = ((x1 + x2) / 2.0) - screen_center_x
                     next_point[1] = ((y1 + y2) / 2.0) - screen_center_y
-                    closest_point = np.array([x1, y1]) if np.hypot(x1, y1) < np.hypot(x2, y2) else np.array([x2, y2])
-                
+
+                    # Changed here
+                    next_heading_deg = np.rad2deg(np.arctan2(next_point[1], next_point[0]))
+                    
+                    # closest_point = np.array([x1, y1]) if np.hypot(x1, y1) < np.hypot(x2, y2) else np.array([x2, y2])
+                    if np.sqrt(x1**2 + y1**2) < np.sqrt(x2**2 + y2**2):
+                            closest_point[0] = x1
+                            closest_point[1] = y1
+                    else:
+                        closest_point[0] = x2
+                        closest_point[1] = y2
+
                 # If multiple lines are detected, get the farthest line
-                else:
+                elif countours > 1:
                     caveline_points = np.zeros((countours, 2))
                     waypoints = np.zeros((countours, 2))
                     distances = np.zeros((countours, 1))
@@ -127,11 +141,16 @@ class Planner(Node):
                         x1, y1, x2, y2 = line
                         caveline_points[i] = [(x1 + x2) / 2.0, (y1 + y2) / 2.0]
                         waypoints[i] = caveline_points[i] - [screen_center_x, screen_center_y]
-                        distances[i] = np.linalg.norm(waypoints[i])
+                        distances[i] = np.sqrt(waypoints[i, 0]**2 + waypoints[i, 1]**2)
+
                     closest_point_index = np.argmin(distances)
                     closest_point = waypoints[closest_point_index]
+                    if closest_point_index + 1 < countours:
+                            next_point_index = closest_point_index + 1
+                    else:
+                        next_point_index = countours - 1
                     next_point_index = countours - 1
-                    next_point = waypoints[next_point_index]
+                    next_point = waypoints[next_point_index, :]
                     next_heading_deg = np.rad2deg(np.arctan2(next_point[1], next_point[0]))
 
                 direction = "turn" if 25 < abs(next_heading_deg) < 155 else "straight"
@@ -177,6 +196,22 @@ class Planner(Node):
 
             # Publish heading
             #Change here: Publish the angle with swimmer API
+            # Make it -90 for reverse swim
+            if self.reverse_swim:
+                next_heading_deg = (next_heading_deg - 90.0) % 360.0
+            else:
+                next_heading_deg = (next_heading_deg + 90.0) % 360.0
+
+            ''' 
+            Or within -180 to +180
+            if self.reverse_swim:
+                next_heading_deg = next_heading_deg - 90.0
+            else:
+                next_heading_deg = next_heading_deg + 90.0
+            # Normalize to [-180, 180)
+            next_heading_deg = (next_heading_deg + 180.0) % 360.0 - 180.0
+            '''
+
             angle_msg = Float32()
             angle_msg.data = float(next_heading_deg)
             self.angle_pub.publish(angle_msg)

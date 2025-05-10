@@ -28,6 +28,9 @@ class Detector(Node):
         # Package directory
         package_share = get_package_share_directory('aqua_line_follower')
 
+        self.declare_parameter('reverse_swim', False)
+        self.reverse_swim = self.get_parameter('reverse_swim').get_parameter_value().bool_value
+
         # CVBridge for converting OpenCV images to ROS Image messages
         self.bridge = CvBridge()
 
@@ -71,7 +74,7 @@ class Detector(Node):
                 # Detect cavelines on the downward camera frame
                 # self.get_logger().info("Inferencing on downward frame...")
                 lines, line_overlayed_map = InferenceOnFrame(
-                    self.session, self.input_name, frame)
+                    self.session, self.input_name, frame, reverse_swim=self.reverse_swim)
                 
                 # Publish the processed frame
                 seg_map_msg = self.bridge.cv2_to_imgmsg(line_overlayed_map, encoding='bgr8')

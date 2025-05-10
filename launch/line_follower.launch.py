@@ -3,18 +3,26 @@
 # Email: gupta.alankrit@ufl.edu, adnanabdullah@ufl.edu
 # =======================================================
 
-from launch import LaunchDescription
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch.actions import DeclareLaunchArgument
+from launch import LaunchDescription
+
 
 def generate_launch_description():
     return LaunchDescription([
+        DeclareLaunchArgument(
+            'reverse_swim',
+            default_value='false',
+            description='Whether to swim in reverse'
+        ),
         # Launch detector node
         Node(
             package='aqua_line_follower',
             executable='detector',
             name='detector',
             output='screen',
-            parameters=[{
+            parameters=[{'reverse_swim': LaunchConfiguration('reverse_swim')
             }]
         ),
 
@@ -25,6 +33,7 @@ def generate_launch_description():
             name='planner',
             output='screen',
             parameters=[{
+                'reverse_swim': LaunchConfiguration('reverse_swim')
             }]
         ),
 
@@ -35,6 +44,7 @@ def generate_launch_description():
             name='swimmer',
             output='screen',
             parameters=[{
+                'reverse_swim': LaunchConfiguration('reverse_swim')
             }]
         ),
 
