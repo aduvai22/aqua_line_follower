@@ -18,7 +18,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'fps',
-            default_value='2',
+            default_value='2.0',
             description='Frames per second for the velocity estimator'
         ),
 

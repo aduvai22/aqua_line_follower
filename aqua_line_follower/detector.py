@@ -55,7 +55,7 @@ class Detector(Node):
         self.map_pub = self.create_publisher(Image, '/a15/line_follower/seg_map', 10)
         self.lines_pub = self.create_publisher(Float32MultiArray, '/a15/line_follower/detected_lines', 10)
 
-        self.get_logger().info("Waiting for input image")
+        self.get_logger().info("Detector node ready. Waiting for input image")
 
     def image_callback(self, msg):
         """
@@ -81,7 +81,7 @@ class Detector(Node):
                 self.map_pub.publish(seg_map_msg)
 
                 if lines is not None and len(lines) > 0:
-                    self.get_logger().info("Lines detected")
+                    # self.get_logger().info("Lines detected")
                     # Publish detected line coordinates
                     flat_lines = [float(coord) for line in lines for coord in line]  # flatten the list of lines
                     lines_msg = Float32MultiArray()

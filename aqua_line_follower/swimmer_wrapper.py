@@ -21,7 +21,7 @@ class SwimmerWrapper(Node):
         self.swimmer.zero_heading()
 
     def swim_callback(self, msg):
-        self.swimmer.timed_swim(speed=0.6, depth=0.4, yaw=msg.data, heave=0.0, pitch=0.0, roll=0.0, duration=0.5)    
+        self.swimmer.timed_swim(speed=0.6, depth=0.5, yaw=msg.data, heave=0.0, pitch=0.0, roll=0.0, duration=0.5)    
 
 def main():
     wrapper = SwimmerWrapper()

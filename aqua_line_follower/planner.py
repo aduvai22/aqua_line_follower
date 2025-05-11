@@ -30,24 +30,17 @@ class Planner(Node):
         # Package directory
         package_share = get_package_share_directory('aqua_line_follower')
 
-        # Read config params
-        config_file = os.path.join(package_share, 'config', 'config.yaml')
-        with open(config_file, 'r') as f:
-            config = yaml.safe_load(f)
-
-        self.PUBLISH_RATE = config['PUBLISH_RATE']  # 5 Hz
-        self.SLEEP_TIME = 1.0 / self.PUBLISH_RATE
 
         self.declare_parameter('reverse_swim', False)
         self.reverse_swim = self.get_parameter('reverse_swim').get_parameter_value().bool_value
 
         # Subscribed message containers
         self.detected_lines = None
-        self.map_image = None
+        self.seg_map_image = None
 
         # Subscribe to map and detected lines
         self.lines_sub = self.create_subscription(Float32MultiArray, '/a15/line_follower/detected_lines', self.lines_callback, 10)
-        self.map_sub = self.create_subscription(Image, '/a15/line_follower/seg_map', self.map_callback, 10)
+        self.map_sub = self.create_subscription(Image, '/a15/line_follower/seg_map', self.seg_map_callback, 10)
 
 
         # Create publishers for data topics
@@ -65,20 +58,19 @@ class Planner(Node):
         self.prev_closest_point = np.array([0.0, 0.0])
         self.DIRECTION_HISTORY_SIZE = 3
 
-        # # Set processing rate (10 Hz) using a timer
-        # self.timer = self.create_timer(1.0 / 10.0, self.timer_callback)
+        self.get_logger().info("Planner node ready. Waiting for seg map image")
 
 
-    def map_callback(self, msg):
+    def seg_map_callback(self, msg):
         """
         Store the segmentation map and 
         convert it from ROS Image to OpenCV format
         """
         try:
-            self.map_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            self.seg_map_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         except Exception as e:
-            self.get_logger().error(f"Failed to convert map image: {e}")
-            self.map_image = None
+            self.get_logger().error(f"Failed to convert seg map image: {e}")
+            self.seg_map_image = None
 
 
     def lines_callback(self, msg):
@@ -88,8 +80,8 @@ class Planner(Node):
         Process the lines to set next waypoint and heading angle
         """
         # Check if segmentation map is published
-        if self.map_image is None:
-            self.get_logger().info("Waiting for map image...")
+        if self.seg_map_image is None:
+            self.get_logger().info("Waiting for seg map image...")
             return
         
         try:
@@ -97,7 +89,7 @@ class Planner(Node):
 
             # --- Process the detected lines to calculate next waypoint ---
             lines = self.detected_lines
-            line_overlayed_map = self.map_image.copy()
+            line_overlayed_map = self.seg_map_image.copy()
             frame_height, frame_width = line_overlayed_map.shape[:2]
             screen_center_x = frame_width // 2
             screen_center_y = frame_height // 2
@@ -215,9 +207,6 @@ class Planner(Node):
             angle_msg = Float32()
             angle_msg.data = float(next_heading_deg)
             self.angle_pub.publish(angle_msg)
-
-            # Sleep to maintain ~5Hz
-            # time.sleep(self.SLEEP_TIME)
 
         except Exception as e:
             self.get_logger().error("Exception in timer callback: {}".format(e))
