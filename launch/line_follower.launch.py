@@ -16,6 +16,12 @@ def generate_launch_description():
             default_value='false',
             description='Whether to swim in reverse'
         ),
+        DeclareLaunchArgument(
+            'fps',
+            default_value='2',
+            description='Frames per second for the velocity estimator'
+        ),
+
         # Launch detector node
         Node(
             package='aqua_line_follower',
@@ -45,6 +51,17 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'reverse_swim': LaunchConfiguration('reverse_swim')
+            }]
+        ),
+
+        # Launch optical flow-based velocity estimator node
+        Node(
+            package='aqua_velocity_control',
+            executable='velocity_estimator',
+            name='velocity_estimator',
+            output='screen',
+            parameters=[{
+                'fps': LaunchConfiguration('fps')
             }]
         ),
 
