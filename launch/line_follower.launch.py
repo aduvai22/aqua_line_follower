@@ -44,15 +44,15 @@ def generate_launch_description():
         ),
 
         # Launch swimmer control node
-        # Node(
-        #     package='aqua_line_follower',
-        #     executable='swimmer',
-        #     name='swimmer',
-        #     output='screen',
-        #     parameters=[{
-        #         'reverse_swim': LaunchConfiguration('reverse_swim')
-        #     }]
-        # ),
+        Node(
+            package='aqua_line_follower',
+            executable='swimmer',
+            name='swimmer',
+            output='screen',
+            parameters=[{
+                'reverse_swim': LaunchConfiguration('reverse_swim')
+            }]
+        ),
 
         # Launch optical flow-based velocity estimator node
         Node(
@@ -66,10 +66,10 @@ def generate_launch_description():
         ),
 
         # Launch rosbagger node
-        Node(
-            package='shape', 
-            executable='rosbag_client_node',
-            name='rosbag_client_node',
-            output='screen',
-        ),
+        # Node(
+        #     package='shape', 
+        #     executable='rosbag_client_node',
+        #     name='rosbag_client_node',
+        #     output='screen',
+        # ),
     ])
